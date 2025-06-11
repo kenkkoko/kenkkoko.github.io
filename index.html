@@ -526,59 +526,62 @@
         }
 
         function renderResponses() {
-            const container = document.getElementById('responsesList');
-            container.innerHTML = '';
-            
-            responses.forEach((response, index) => {
-                const responseDiv = document.createElement('div');
-                responseDiv.className = 'response-item';
-                responseDiv.innerHTML = `
-                    <div class="response-header">
-                        <div>
-                            <span style="background: #4299e1; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; margin-right: 10px;">
-                                ${index + 1}/${responses.length}
-                            </span>
-                            ${response.group ? `<span style="background: #38b2ac; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; margin-right: 10px;">
-                                ${response.group}
-                            </span>` : ''}
-                            ${response.participantId ? `<span style="background: #805ad5; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; margin-right: 10px;">
-                                ID: ${response.participantId}
-                            </span>` : ''}
-                            <br style="margin-bottom: 8px;">
-                            <strong>刺激詞：</strong>${response.stimulusWord} 
-                            <strong style="margin-left: 20px;">回答：</strong>
-                            <span class="response-text">${response.participantResponse}</span>
-                        </div>
-                        <button class="delete-btn" onclick="deleteResponse(${response.id})">刪除</button>
+    const container = document.getElementById('responsesList');
+    container.innerHTML = '';
+    
+    responses.forEach((response, index) => {
+        const responseDiv = document.createElement('div');
+        responseDiv.className = 'response-item';
+        responseDiv.innerHTML = `
+            <div class="response-header">
+                <div style="width: 100%;">
+                    <div style="text-align: center; margin-bottom: 8px;">
+                        <span style="background: #4299e1; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; margin-right: 10px;">
+                            ${index + 1}/${responses.length}
+                        </span>
+                        ${response.group ? `<span style="background: #38b2ac; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; margin-right: 10px;">
+                            ${response.group}
+                        </span>` : ''}
+                        ${response.participantId ? `<span style="background: #805ad5; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; margin-right: 10px;">
+                            ID: ${response.participantId}
+                        </span>` : ''}
                     </div>
-                    <div class="rating-scale">
-                        <div style="width: 100%;">
-                            <div class="scale-labels">
-                                <span>1-2分（低）<br><small>表面、單一、常見</small></span>
-                                <span></span>
-                                <span>3分（中）<br><small>有創意但有限</small></span>
-                                <span></span>
-                                <span>4-5分（高）<br><small>深+遠+稀+透</small></span>
-                            </div>
-                            <div class="radio-group">
-                                ${[1, 2, 3, 4, 5].map(score => `
-                                    <div class="radio-item">
-                                        <input type="radio" 
-                                               id="score_${response.id}_${score}" 
-                                               name="score_${response.id}" 
-                                               value="${score}"
-                                               ${response.score == score ? 'checked' : ''}
-                                               onchange="updateScore(${response.id}, ${score})">
-                                        <label for="score_${response.id}_${score}">${score}</label>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
+                    <div style="text-align: center; font-size: 1.2em;">
+                        <strong>刺激詞：</strong>${response.stimulusWord}　
+                        <strong>回答：</strong><span class="response-text">${response.participantResponse}</span>
                     </div>
-                `;
-                container.appendChild(responseDiv);
-            });
-        }
+                </div>
+                <button class="delete-btn" onclick="deleteResponse(${response.id})">刪除</button>
+            </div>
+            <div class="rating-scale">
+                <div style="width: 100%;">
+                    <div class="scale-labels">
+                        <span>1-2分（低）<br><small>表面、單一、常見</small></span>
+                        <span></span>
+                        <span>3分（中）<br><small>有創意但有限</small></span>
+                        <span></span>
+                        <span>4-5分（高）<br><small>深+遠+稀+透</small></span>
+                    </div>
+                    <div class="radio-group">
+                        ${[1, 2, 3, 4, 5].map(score => `
+                            <div class="radio-item">
+                                <input type="radio" 
+                                       id="score_${response.id}_${score}" 
+                                       name="score_${response.id}" 
+                                       value="${score}"
+                                       ${response.score == score ? 'checked' : ''}
+                                       onchange="updateScore(${response.id}, ${score})">
+                                <label for="score_${response.id}_${score}">${score}</label>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(responseDiv);
+    });
+}
+
 
         function updateScore(responseId, score) {
             const response = responses.find(r => r.id === responseId);
