@@ -1,721 +1,668 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
+<!doctype html>
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>字詞聯想創造力評分系統</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', '微軟正黑體', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        .header {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            text-align: center;
-        }
-        
-        .header h1 {
-            color: #4a5568;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-        
-        .instructions {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-        
-        .instructions h2 {
-            color: #2d3748;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-        }
-        
-        .scoring-criteria {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .criteria-item {
-            background: linear-gradient(135deg, #4299e1, #3182ce);
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        
-        .criteria-item:hover {
-            transform: translateY(-2px);
-        }
-        
-        .criteria-item h4 {
-            font-size: 1.1em;
-            margin-bottom: 5px;
-        }
-        
-        .scoring-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        }
-        
-        .data-input {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .input-group label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #2d3748;
-        }
-        
-        .input-group input, .input-group textarea {
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-        
-        .input-group input:focus, .input-group textarea:focus {
-            outline: none;
-            border-color: #4299e1;
-        }
-        
-        .response-item {
-            background: #f7fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-        }
-        
-        .response-item:hover {
-            border-color: #4299e1;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        .response-item.unscored {
-            border: 3px solid #e53e3e;
-            background: #fed7d7;
-            box-shadow: 0 0 10px rgba(229, 62, 62, 0.3);
-        }
-        
-        .response-item.unscored:hover {
-            border-color: #c53030;
-            box-shadow: 0 5px 15px rgba(229, 62, 62, 0.4);
-        }
-        
-        .response-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .response-text {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: #2d3748;
-        }
-        
-        .delete-btn {
-            background: #e53e3e;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        
-        .delete-btn:hover {
-            background: #c53030;
-        }
-        
-        .rating-scale {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 15px;
-        }
-        
-        .scale-labels {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            margin-bottom: 15px;
-            font-size: 0.9em;
-            color: #718096;
-        }
-        
-        .radio-group {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            width: 100%;
-            margin: 10px 0;
-        }
-        
-        .radio-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .radio-item input[type="radio"] {
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-            transform: scale(1.2);
-        }
-        
-        .radio-item label {
-            font-weight: 600;
-            color: #4299e1;
-            cursor: pointer;
-            font-size: 1.1em;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #4299e1, #3182ce);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 10px;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(66, 153, 225, 0.4);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #38b2ac, #319795);
-        }
-        
-        .btn-secondary:hover {
-            box-shadow: 0 5px 15px rgba(56, 178, 172, 0.4);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, #48bb78, #38a169);
-        }
-        
-        .btn-success:hover {
-            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
-        }
-        
-        .actions {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            margin-top: 30px;
-        }
-        
-        .progress-info {
-            background: linear-gradient(135deg, #ed8936, #dd6b20);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 600;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-        
-        @media (max-width: 768px) {
-            .data-input {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 2em;
-            }
-            
-            .actions {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .radio-group {
-                gap: 10px;
-            }
-            
-            .radio-item input[type="radio"] {
-                width: 24px;
-                height: 24px;
-            }
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>林新凱 Kai Lin — AI Product Builder</title>
+<meta name="description" content="林新凱 Kai Lin — AI Product Builder。跨領域橫跨設計、程式與行銷,想清楚再做、用數據驗證成果。" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#08080a;
+  --ink:#f5f5f6;
+  --text:#c3c3c8;
+  --muted:#8f8f97;
+  --faint:#5a5a62;
+  --glass:rgba(255,255,255,.045);
+  --glass-2:rgba(255,255,255,.07);
+  --line:rgba(255,255,255,.09);
+  --line-soft:rgba(255,255,255,.05);
+  --sans:"Geist","Noto Sans TC",system-ui,-apple-system,sans-serif;
+  --mono:"Geist Mono",ui-monospace,monospace;
+  --ease:cubic-bezier(.16,1,.3,1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;
+  letter-spacing:-.01em;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+::selection{background:rgba(255,255,255,.85);color:#08080a}
+svg{display:block}
+
+/* ── low-poly fixed background ── */
+#poly{position:fixed;inset:0;z-index:-2;background:var(--bg)}
+#poly canvas{display:block;width:100%;height:100%}
+#vign{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(120% 90% at 42% 42%,transparent 22%,rgba(8,8,10,.62) 72%,rgba(8,8,10,.94) 100%),
+    linear-gradient(rgba(8,8,10,.2),rgba(8,8,10,.2))}
+
+/* ── nav pill ── */
+nav{position:fixed;top:18px;left:50%;transform:translateX(-50%);z-index:100;
+  display:flex;gap:4px;padding:7px 9px;border-radius:999px;
+  background:rgba(20,20,24,.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid var(--line);box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:94vw}
+nav a{font-size:13.5px;font-weight:500;color:var(--text);padding:8px 15px;border-radius:999px;
+  transition:.3s var(--ease);white-space:nowrap}
+nav a:hover{color:var(--ink)}
+nav a.active{color:var(--ink);background:var(--glass-2)}
+@media(max-width:680px){nav{gap:0;padding:5px 6px}nav a{padding:7px 10px;font-size:12px}}
+@media(max-width:430px){nav a[data-opt]{display:none}}
+
+/* ── layout ── */
+.wrap{max-width:1400px;margin:0 auto;padding:0 clamp(24px,4vw,60px)}
+section{position:relative}
+.h-sec{font-weight:800;letter-spacing:-.03em;font-size:clamp(30px,4.2vw,52px);line-height:1.05;
+  margin-bottom:clamp(24px,3.5vh,40px)}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(26px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.rv.in{opacity:1;transform:none}
+.rv[data-d="1"]{transition-delay:.07s}.rv[data-d="2"]{transition-delay:.14s}
+.rv[data-d="3"]{transition-delay:.21s}.rv[data-d="4"]{transition-delay:.28s}
+
+/* ── hero ── */
+#home{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:120px 24px 80px}
+#home .hi{font-weight:900;letter-spacing:-.04em;line-height:.95;
+  font-size:clamp(54px,11vw,124px)}
+#home .sub{margin-top:22px;color:var(--text);font-size:clamp(16px,2.4vw,22px);font-weight:400;
+  letter-spacing:.01em;min-height:1.4em}
+.tw-caret{display:inline-block;margin-left:1px;color:var(--ink);font-weight:300;
+  transform:translateY(1px);animation:blink 1.05s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+#home .zh{margin-top:10px;color:var(--muted);font-family:var(--mono);font-size:13px;letter-spacing:.14em}
+.scroll-cue{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--faint);
+  display:flex;flex-direction:column;align-items:center;gap:9px}
+.scroll-cue i{width:1px;height:38px;background:linear-gradient(var(--faint),transparent);
+  animation:cue 2s var(--ease) infinite}
+@keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}
+  51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+/* ── about ── */
+#about{padding:clamp(60px,11vh,130px) 0}
+#about p{max-width:72ch;color:var(--text);font-weight:300;line-height:1.8;
+  font-size:clamp(15px,1.4vw,17.5px)}
+#about p b{color:var(--ink);font-weight:500}
+.socials{display:flex;gap:14px;margin-top:30px}
+.socials a{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;
+  background:var(--glass);border:1px solid var(--line);color:var(--text);
+  backdrop-filter:blur(10px);transition:.3s var(--ease)}
+.socials a:hover{color:var(--ink);background:var(--glass-2);transform:translateY(-3px)}
+.socials svg{width:19px;height:19px}
+
+/* ── experience accordion ── */
+#experience{padding:clamp(60px,11vh,130px) 0}
+.exp-card{background:var(--glass);border:1px solid var(--line);border-radius:16px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);margin-bottom:14px;
+  overflow:hidden;transition:border-color .3s,background .3s}
+.exp-card:hover{border-color:rgba(255,255,255,.16)}
+.exp-head{width:100%;background:none;border:0;color:inherit;cursor:pointer;
+  display:flex;justify-content:space-between;align-items:center;gap:16px;
+  padding:22px 24px;text-align:left;font-family:inherit}
+.exp-role{font-weight:600;font-size:clamp(16px,2.2vw,19px);letter-spacing:-.01em}
+.exp-org{color:var(--muted);font-size:13.5px;margin-top:4px;font-weight:300}
+.exp-right{display:flex;align-items:center;gap:16px;flex:none}
+.exp-period{font-family:var(--mono);font-size:12.5px;color:var(--text);letter-spacing:.03em;white-space:nowrap}
+.chev{width:20px;height:20px;color:var(--muted);transition:transform .4s var(--ease)}
+.exp-card.open .chev{transform:rotate(180deg)}
+.exp-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .5s var(--ease)}
+.exp-card.open .exp-body{grid-template-rows:1fr}
+.exp-bw{overflow:hidden}
+.exp-inner{padding:0 24px 24px;border-top:1px solid var(--line-soft)}
+.exp-inner .blk{margin-top:18px}
+.exp-inner .blk h4{font-weight:600;font-size:14.5px;color:var(--ink);margin-bottom:8px}
+.exp-inner .blk li{list-style:none;position:relative;padding-left:16px;color:var(--text);
+  font-weight:300;font-size:14.5px;line-height:1.7;margin-bottom:4px}
+.exp-inner .blk li::before{content:"·";position:absolute;left:3px;color:var(--muted);font-weight:700}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.tag{font-family:var(--mono);font-size:12px;color:var(--text);letter-spacing:.02em;
+  border:1px solid var(--line);border-radius:999px;padding:5px 11px;background:rgba(255,255,255,.02)}
+
+/* ── projects ── */
+#projects{padding:clamp(60px,11vh,130px) 0}
+.filters{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:34px}
+.filters button{font-family:inherit;font-size:13px;font-weight:500;color:var(--text);cursor:pointer;
+  background:var(--glass);border:1px solid var(--line);border-radius:999px;padding:8px 17px;
+  backdrop-filter:blur(8px);transition:.25s var(--ease)}
+.filters button:hover{color:var(--ink)}
+.filters button.on{background:#f2f2f4;color:#08080a;border-color:#f2f2f4}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+.card{background:var(--glass);border:1px solid var(--line);border-radius:16px;padding:24px;
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;
+  transition:.35s var(--ease)}
+.card:hover{background:var(--glass-2);border-color:rgba(255,255,255,.18);transform:translateY(-4px)}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.card h3{font-weight:600;font-size:19px;letter-spacing:-.02em;line-height:1.25}
+.badge{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+  background:#f2f2f4;color:#08080a;border-radius:999px;padding:4px 9px;white-space:nowrap;font-weight:500}
+.badge.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.card p{color:var(--text);font-weight:300;font-size:15px;line-height:1.7;margin-top:14px;flex:1}
+.card-links{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.plink{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;color:var(--ink);
+  background:var(--glass-2);border:1px solid var(--line);border-radius:10px;padding:8px 13px;
+  transition:.25s var(--ease)}
+.plink:hover{background:#f2f2f4;color:#08080a;border-color:#f2f2f4}
+.plink svg{width:13px;height:13px}
+.card .tags{margin-top:16px}
+
+/* ── stack ── */
+#stack{padding:clamp(60px,11vh,130px) 0}
+.stack-row{display:grid;grid-template-columns:130px 1fr;gap:24px;align-items:start;
+  padding:22px 0;border-top:1px solid var(--line-soft)}
+.stack-row:last-child{border-bottom:1px solid var(--line-soft)}
+.stack-row .sg{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);padding-top:6px}
+.chips{display:flex;flex-wrap:wrap;gap:9px}
+.chip{font-size:13.5px;font-weight:400;color:var(--ink);background:var(--glass);border:1px solid var(--line);
+  border-radius:10px;padding:8px 14px;backdrop-filter:blur(8px);transition:.25s var(--ease)}
+.chip:hover{background:var(--glass-2);border-color:rgba(255,255,255,.2)}
+@media(max-width:560px){.stack-row{grid-template-columns:1fr;gap:12px}}
+#education{padding:clamp(60px,11vh,130px) 0}
+.edu-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,70px)}
+.edu-label{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px}
+.edu-item{padding:14px 0;border-bottom:1px solid var(--line-soft)}
+.edu-item:first-of-type{border-top:1px solid var(--line-soft)}
+.edu-when{display:block;font-family:var(--mono);font-size:11.5px;color:var(--muted);
+  letter-spacing:.06em;margin-bottom:5px}
+.edu-what{font-size:clamp(14.5px,1.1vw,16px);font-weight:300;color:var(--text);line-height:1.5}
+.edu-what b{color:var(--ink);font-weight:500}
+@media(max-width:640px){.edu-grid{grid-template-columns:1fr;gap:40px}}
+
+/* ── contact ── */
+#contact{padding:clamp(60px,12vh,140px) 0 0}
+#contact .h-sec{margin-bottom:18px}
+.mail{display:inline-flex;align-items:center;gap:14px;font-weight:500;letter-spacing:-.02em;
+  font-size:clamp(22px,4.5vw,46px);transition:.3s var(--ease)}
+.mail:hover{gap:22px;color:var(--text)}
+.mail svg{width:.7em;height:.7em}
+.cinfo{display:flex;flex-wrap:wrap;gap:14px 40px;margin-top:34px}
+.cinfo a,.cinfo span{font-family:var(--mono);font-size:13px;color:var(--text);letter-spacing:.03em;
+  display:inline-flex;gap:8px;align-items:center;transition:color .25s}
+.cinfo a:hover{color:var(--ink)}
+footer{margin-top:clamp(50px,8vh,90px);border-top:1px solid var(--line-soft);
+  padding:24px 0 46px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;
+  font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.06em}
+/* clickable card hint */
+.card{cursor:pointer}
+.card-more{margin-top:16px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;
+  color:var(--muted);display:inline-flex;align-items:center;gap:6px;transition:.25s var(--ease)}
+.card:hover .card-more{color:var(--ink)}
+.card-more .ar{transition:transform .25s var(--ease)}
+.card:hover .card-more .ar{transform:translateX(4px)}
+.exp-more{margin-top:18px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;cursor:pointer;
+  color:var(--text);background:var(--glass-2);border:1px solid var(--line);border-radius:999px;
+  padding:8px 15px;transition:.25s var(--ease)}
+.exp-more:hover{background:#f2f2f4;color:#08080a;border-color:#f2f2f4}
+
+/* detail modal */
+.modal{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:24px}
+.modal.open{display:flex}
+.modal-bg{position:absolute;inset:0;background:rgba(4,4,6,.72);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);animation:fadein .3s var(--ease)}
+.modal-panel{position:relative;z-index:1;width:min(960px,96vw);max-height:92vh;overflow:auto;
+  background:rgba(18,18,22,.82);border:1px solid var(--line);border-radius:20px;
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+  box-shadow:0 30px 90px rgba(0,0,0,.6);padding:clamp(26px,4vw,44px);
+  animation:pop .4s var(--ease)}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.modal-close{position:absolute;top:14px;right:14px;width:38px;height:38px;border-radius:50%;
+  background:var(--glass);border:1px solid var(--line);color:var(--text);cursor:pointer;font-size:15px;
+  display:grid;place-items:center;transition:.25s var(--ease);z-index:2}
+.modal-close:hover{background:var(--glass-2);color:var(--ink)}
+.modal-meta{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:10px}
+.modal-panel h3{font-weight:700;font-size:clamp(24px,4.5vw,36px);letter-spacing:-.02em;line-height:1.08}
+.modal-body{color:var(--text);font-weight:300;line-height:1.85;font-size:15.5px;margin-top:18px}
+.modal-body p{margin-bottom:12px}.modal-body p:last-child{margin-bottom:0}
+.modal-body b{color:var(--ink);font-weight:500}
+.modal-cover{width:100%;border-radius:14px;border:1px solid var(--line);display:block;margin:20px 0 4px}
+.modal-imgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-top:22px}
+.modal-imgs img{width:100%;border-radius:12px;border:1px solid var(--line);display:block}
+@media(max-width:560px){.modal-imgs{grid-template-columns:1fr}}
+.modal-panel .tags{margin-top:22px}
+.modal-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+
+/* ── 手機/平板左右留白(下列區塊原本水平 padding 被各自 #id 規則歸零,小螢幕會貼齊邊緣;放在最後確保覆蓋) ── */
+@media(max-width:1100px){
+  #about,#experience,#projects,#stack,#education,#contact{
+    padding-left:clamp(20px,5vw,40px);padding-right:clamp(20px,5vw,40px)}
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>字詞聯想創造力評分系統</h1>
-            <p>評審專用評分平台</p>
-        </div>
-        
-        <div class="instructions">
-            <h2>📋 創造力評分標準（基於Torrance理論）</h2>
-            <div style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 15px; margin-bottom: 25px; text-align: center;">
-                <h3 style="margin-bottom: 15px; font-size: 1.8em;">評分口訣：「少見、跳遠、說透、合理」</h3>
-                <p style="font-size: 1.2em; margin-bottom: 10px;"><strong>稀 + 遠 + 透 + 切 = 高分</strong></p>
-                <p style="font-size: 1em; opacity: 0.9;">請綜合考量四個面向，給予1-5分整體評分</p>
-            </div>
-            
-            <div class="torrance-dimensions" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 25px;">
-                <div class="dimension-card" style="background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px;">
-                    <h4 style="color: #2d3748; margin-bottom: 10px; display: flex; align-items: center;">
-                        <span style="background: #805ad5; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold;">1</span>
-                        原創性 (Originality)
-                    </h4>
-                    <p style="font-weight: 600; color: #805ad5; margin-bottom: 8px;">少見：答案是不是罕見或意料之外？</p>
-                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-                        <li><strong>低分：</strong>常見、老梗</li>
-                        <li><strong>中分：</strong>稍具新意</li>
-                        <li><strong>高分：</strong>罕見且出其不意</li>
-                    </ul>
-                </div>
-                
-                <div class="dimension-card" style="background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px;">
-                    <h4 style="color: #2d3748; margin-bottom: 10px; display: flex; align-items: center;">
-                        <span style="background: #38b2ac; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold;">2</span>
-                        變通性 (Flexibility)
-                    </h4>
-                    <p style="font-weight: 600; color: #38b2ac; margin-bottom: 8px;">跳遠：概念跨多遠、角度變化多大？</p>
-                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-                        <li><strong>低分：</strong>侷限單一路徑</li>
-                        <li><strong>中分：</strong>小幅換類別</li>
-                        <li><strong>高分：</strong>跨域或多角度切換</li>
-                    </ul>
-                </div>
-                
-                <div class="dimension-card" style="background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px;">
-                    <h4 style="color: #2d3748; margin-bottom: 10px; display: flex; align-items: center;">
-                        <span style="background: #ed8936; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold;">3</span>
-                        周全性 (Elaboration)
-                    </h4>
-                    <p style="font-weight: 600; color: #ed8936; margin-bottom: 8px;">說透：敘述有沒有補充故事、隱喻、細節？</p>
-                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-                        <li><strong>低分：</strong>幾乎無補充</li>
-                        <li><strong>中分：</strong>基本描述</li>
-                        <li><strong>高分：</strong>故事化、隱喻、細節豐富</li>
-                    </ul>
-                </div>
-                
-                <div class="dimension-card" style="background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px;">
-                    <h4 style="color: #2d3748; margin-bottom: 10px; display: flex; align-items: center;">
-                        <span style="background: #e53e3e; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold;">4</span>
-                        適切性 (Appropriateness)
-                    </h4>
-                    <p style="font-weight: 600; color: #e53e3e; margin-bottom: 8px;">合理：聯想是否符合刺激詞意涵且具實際意義？</p>
-                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-                        <li><strong>低分：</strong>與刺激詞無關或不合邏輯</li>
-                        <li><strong>中分：</strong>基本相關且合理</li>
-                        <li><strong>高分：</strong>高度相關且富有深層意義</li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="scoring-summary" style="background: linear-gradient(135deg, #48bb78, #38a169); color: white; padding: 20px; border-radius: 12px;">
-                <h3 style="margin-bottom: 15px; text-align: center;">📊 綜合評分標準</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
-                    <div style="text-align: center;">
-                        <h4 style="margin-bottom: 5px;">1-2分（低）</h4>
-                        <p style="font-size: 0.9em; opacity: 0.9;">常見、單一路徑、沒細節、不合理</p>
-                    </div>
-                    <div style="text-align: center;">
-                        <h4 style="margin-bottom: 5px;">3分（中）</h4>
-                        <p style="font-size: 0.9em; opacity: 0.9;">有創意意圖，但跨域/細節/適切性仍有限</p>
-                    </div>
-                    <div style="text-align: center;">
-                        <h4 style="margin-bottom: 5px;">4-5分（高）</h4>
-                        <p style="font-size: 0.9em; opacity: 0.9;">罕見+大跨域+故事豐富+深層意義</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="scoring-section">
-            <h2>🎯 資料輸入與評分</h2>
-            
-            <!-- 檔案上傳區域 -->
-            <div class="upload-section" style="margin-bottom: 30px;">
-                <h3 style="margin-bottom: 15px; color: #2d3748;">📁 上傳Excel/CSV檔案</h3>
-                <div class="upload-area" style="border: 2px dashed #4299e1; border-radius: 12px; padding: 30px; text-align: center; background: #f7fafc; margin-bottom: 15px;">
-                    <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display: none;" onchange="handleFileUpload(event)">
-                    <div onclick="document.getElementById('fileInput').click()" style="cursor: pointer;">
-                        <div style="font-size: 3em; color: #4299e1; margin-bottom: 10px;">📊</div>
-                        <p style="font-size: 1.2em; color: #4a5568; margin-bottom: 10px;">點擊選擇檔案</p>
-                        <p style="color: #718096;">支援格式：CSV, Excel (.xlsx, .xls)</p>
-                        <p style="color: #718096; font-size: 0.9em;">檔案格式：group, participant_id, item, response</p>
-                    </div>
-                </div>
-                <div class="file-info" id="fileInfo" style="display: none; background: #e6fffa; border: 1px solid #38b2ac; border-radius: 8px; padding: 15px; color: #234e52;">
-                    <strong>已上傳檔案：</strong><span id="fileName"></span><br>
-                    <strong>資料筆數：</strong><span id="dataCount"></span>
-                </div>
-            </div>
-            
-            <!-- 手動輸入區域 -->
-            <div class="manual-input" style="border-top: 2px solid #e2e8f0; padding-top: 30px;">
-                <h3 style="margin-bottom: 15px; color: #2d3748;">✏️ 手動輸入（可選）</h3>
-                <div class="data-input">
-                    <div class="input-group">
-                        <label for="stimulusWord">刺激詞：</label>
-                        <input type="text" id="stimulusWord" placeholder="例如：Milk">
-                    </div>
-                    <div class="input-group">
-                        <label for="participantResponse">參與者回答：</label>
-                        <input type="text" id="participantResponse" placeholder="例如：Milk tea">
-                    </div>
-                </div>
-                
-                <div style="text-align: center;">
-                    <button class="btn btn-secondary" onclick="addResponse()">➕ 新增回答</button>
-                </div>
-            </div>
-            
-            <div id="responsesList"></div>
-            
-            <div class="progress-info" id="progressInfo" style="display: none;">
-                已評分：<span id="scoredCount">0</span> / 總數：<span id="totalCount">0</span>
-            </div>
-            
-            <div class="actions">
-                <button class="btn" onclick="clearAll()">🗑️ 清除所有資料</button>
-                <button class="btn btn-success" onclick="exportToExcel()">📊 匯出Excel檔案</button>
-            </div>
-        </div>
+
+<div id="poly"></div>
+<div id="vign"></div>
+
+<nav id="nav"></nav>
+
+<!-- ═══════════════ 內容由下方 JS 的 DATA 物件產生 ═══════════════ -->
+<main>
+  <section id="home">
+    <h1 class="hi rv" id="hi"></h1>
+    <p class="sub rv" data-d="1" id="sub"></p>
+    <p class="zh rv" data-d="2" id="zh"></p>
+    <div class="scroll-cue">SCROLL<i></i></div>
+  </section>
+
+  <section id="about" class="wrap">
+    <h2 class="h-sec rv">About Me</h2>
+    <p class="rv" data-d="1" id="aboutText"></p>
+    <div class="socials rv" data-d="2" id="socials"></div>
+  </section>
+
+  <section id="experience" class="wrap">
+    <h2 class="h-sec rv">Experience</h2>
+    <div id="expList"></div>
+  </section>
+
+  <section id="projects" class="wrap">
+    <h2 class="h-sec rv">Personal Projects</h2>
+    <div class="filters rv" data-d="1" id="filters"></div>
+    <div class="grid" id="projGrid"></div>
+  </section>
+
+  <section id="stack" class="wrap">
+    <h2 class="h-sec rv">My Stack</h2>
+    <div id="stackList"></div>
+  </section>
+
+  <section id="education" class="wrap">
+    <h2 class="h-sec rv">Education &amp; Awards</h2>
+    <div class="edu-grid">
+      <div class="edu-col rv">
+        <div class="edu-label">學歷 / Education</div>
+        <div id="eduList"></div>
+      </div>
+      <div class="edu-col rv" data-d="1">
+        <div class="edu-label">獎項 / Awards</div>
+        <div id="awardList"></div>
+      </div>
     </div>
+  </section>
 
-    <script>
-        let responses = [];
-        let currentId = 1;
+  <section id="contact" class="wrap">
+    <h2 class="h-sec rv">Let's connect</h2>
+    <a class="mail rv" data-d="1" id="mail"></a>
+    <div class="cinfo rv" data-d="2" id="cinfo"></div>
+    <footer id="foot"></footer>
+  </section>
+</main>
 
-        // 檔案上傳處理
-        function handleFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+<!-- 點卡片後跳出的詳細內容彈窗 -->
+<div class="modal" id="modal" aria-hidden="true">
+  <div class="modal-bg" data-close></div>
+  <div class="modal-panel" role="dialog" aria-modal="true">
+    <button class="modal-close" data-close aria-label="關閉">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
 
-            const fileName = file.name;
-            const fileExtension = fileName.split('.').pop().toLowerCase();
-            
-            document.getElementById('fileName').textContent = fileName;
-            
-            if (fileExtension === 'csv') {
-                // 處理CSV檔案
-                Papa.parse(file, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        processUploadedData(results.data);
-                        showFileInfo(fileName, results.data.length);
-                    },
-                    error: function(error) {
-                        alert('CSV檔案讀取錯誤：' + error.message);
-                    }
-                });
-            } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-                // 處理Excel檔案
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        const data = new Uint8Array(e.target.result);
-                        const workbook = XLSX.read(data, { type: 'array' });
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet);
-                        
-                        processUploadedData(jsonData);
-                        showFileInfo(fileName, jsonData.length);
-                    } catch (error) {
-                        alert('Excel檔案讀取錯誤：' + error.message);
-                    }
-                };
-                reader.readAsArrayBuffer(file);
-            } else {
-                alert('不支援的檔案格式，請上傳CSV或Excel檔案');
-            }
-        }
+<!-- 互動背景函式庫:Vanta.NET(依賴 three.js)。如需離線/不依賴 CDN,可下載這兩個檔放本機並改成相對路徑 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.net.min.js"></script>
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   ▼▼▼  你要改的東西全部在這個 DATA 物件裡。改文字就好,不用碰上面的程式。 ▼▼▼
+   多版本機制:SHARED 是各版本共用(改一次全部生效);PROFILES 裡每個版本放各自文字。
+   預設顯示 DEFAULT_PROFILE;也可用網址 ?v=marketing 切換,方便對不同職缺寄不同連結。
+   要新增版本:複製整個 builder:{ … } 區塊,改名與內容即可。
+   ════════════════════════════════════════════════════════════════════════ */
+const SHARED = {
+  /* ── 各版本共用:改一次,所有版本生效 ── */
+  nav: [
+    {label:"Home",       href:"#home"},
+    {label:"About",      href:"#about"},
+    {label:"Experience", href:"#experience"},
+    {label:"Projects",   href:"#projects"},
+    {label:"Stack",      href:"#stack", opt:true},
+    {label:"Contact",    href:"#contact"},
+  ],
+  links: {
+    linkedin: "#",                                   // ← TODO 換成你的 LinkedIn
+    behance:  "#",                                   // ← TODO 換成你的 Behance
+    resume:   "mailto:k28552219@gmail.com",          // 或放履歷 PDF 連結
+  },
+  /* ── 學歷(when=年份,what=內容;<b> 會變白) ── */
+  education:[
+    {when:"2023 – 2025", what:"<b>雲林科技大學</b> · 數位媒體設計研究所 碩士"},
+    {when:"2019 – 2023", what:"<b>國立聯合大學</b> · 文化創意與數位行銷學系 學士"},
+  ],
+  /* ── 獎項 ── */
+  awards:[
+    {when:"大學期間", what:"苗栗縣政府 風箏節微電影(產學合作)"},
+    {when:"大學期間", what:"空拍微電影大賽 優選"},
+    {when:"碩士期間", what:"U-Start 創業競賽 通過第一輪"},
+  ],
+  contact:{
+    email:"k28552219@gmail.com",
+    phone:"0925-230-110",
+    location:"桃園市中壢區",
+  },
+};
 
-        function processUploadedData(data) {
-            // 清空現有資料
-            responses = [];
-            currentId = 1;
-            
-            // 處理上傳的資料
-            data.forEach(row => {
-                // 處理可能的欄位名稱變化
-                const group = row.group || row.Group || '';
-                const participantId = row.participant_id || row['participant_id'] || row.ParticipantId || '';
-                const item = row.item || row.Item || row.stimulus || row.Stimulus || '';
-                const response = row.response || row.Response || row.answer || row.Answer || '';
-                
-                if (item && response) {
-                    const newResponse = {
-                        id: currentId++,
-                        group: group,
-                        participantId: participantId,
-                        stimulusWord: item,
-                        participantResponse: response,
-                        score: null
-                    };
-                    responses.push(newResponse);
-                }
-            });
-            
-            renderResponses();
-            updateProgress();
-        }
+const PROFILES = {
 
-        function showFileInfo(fileName, dataCount) {
-            document.getElementById('fileName').textContent = fileName;
-            document.getElementById('dataCount').textContent = dataCount;
-            document.getElementById('fileInfo').style.display = 'block';
-        }
+  /* ═══════════ 版本 1:builder(AI Product Builder / CMoney)═══════════ */
+  builder: {
+    hero: {
+      hi:  "Hi, I'm Kai",
+      sub: "AI Product Builder · Product / Marketing / BD",
+      /* roles = Hero 打字機輪播的句子(會逐字打出再收回、反覆循環)。要改字就改這裡。 */
+      roles: ["AI Product Builder.","Product · Marketing · BD.","Designer who codes.","Ships fast with AI."],
+      zh:  "林新凱 — 目標導向,用數據驗證成果",
+    },
+    about:
+      "跨領域的產品實作者,橫跨設計、程式與行銷。我習慣花 <b>八成時間</b> 定義問題與設計流程、<b>兩成時間</b> 實作,目標導向、以數據驗證成果。我同時是財經產品的 <b>重度使用者</b> 與 <b>打造者</b>——自己經營交易分析論壇、用 TWSE 籌碼資料寫台股與加密貨幣技術分析,也一人 ship 出整合 <b>加密 / 美股 / 台股</b>、Gemini LLM 與 LINE Bot 推播的 AI 投資輔助 Web App「Smart DCA」。",
+    experience: [
+      {
+        role:"遊戲美術外包", org:"自由接案", loc:"Remote", period:"2026 — 進行中", open:true,
+        blocks:[
+          {h:"角色與動畫", items:[
+            "為遊戲開發團隊設計 50 隻 2D 角色",
+            "以 RIVE 製作 150 組狀態驅動動畫,3 個月交付",
+            "依規格與業主反覆溝通迭代",
+          ]},
+        ],
+        tech:["RIVE","Photoshop","Illustrator","2D Animation"],
+      },
+      {
+        role:"宣導內容製作", org:"中壢地政事務所", loc:"桃園", period:"2026",
+        blocks:[
+          {h:"影音企劃", items:[
+            "公務宣導影片企劃與製作",
+          ]},
+        ],
+        tech:["Premiere","影片企劃","腳本"],
+      },
+      {
+        role:"VR 互動應用", org:"研究室產學合作", loc:"Taiwan", period:"2024 — 2025",
+        blocks:[
+          {h:"文化轉譯", items:[
+            "將原住民狩獵文化轉譯為 VR 互動內容",
+          ]},
+        ],
+        tech:["VR","互動設計","內容企劃"],
+      },
+      {
+        role:"CG 動畫與建模", org:"自由接案", loc:"跨國 · 英文協作", period:"2023 — 2025",
+        blocks:[
+          {h:"商業專案交付", items:[
+            "3–5 件商業專案:新加坡乳液品牌廣告 CG、建築 3D 列印、擴香石造型",
+            "獨立負責接洽 · 需求 · 供應商 · 品控 · 交付",
+            "跨國客戶以英文遠端協作",
+          ]},
+        ],
+        tech:["Blender","Maya","CG","3D Modeling"],
+      },
+    ],
+    projectFilters:["All","Product","AI","Research"],
+    projects: [
+      {
+        title:"Smart DCA", badge:"Live", cats:["Product","AI"],
+        desc:"AI 投資輔助 Web App。把恐懼貪婪指數與 RSI 變成可操作的進場訊號,解決個人投資者進場無紀律的痛點。一人 3 週完成 MVP,整合加密 / 美股 / 台股三市場 + 社群論壇,Gemini LLM 新聞分析、LINE Bot 每日推播。",
+        links:[{label:"Live Demo",url:"https://dca.hellokai07.com/"}],
+        tech:["HTML / JS","Supabase","Binance API","Gemini LLM","LINE Bot","TradingView","RSI / FNG"],
+        /* detail = 點卡片後的展示視窗(已放大)。因為 Smart DCA 要登入才看得到,
+           這裡用「封面 + 說明 + 截圖」呈現,讓人不登入也能看到內容。
+           圖片做法:把檔案放進 repo 的 images/ 資料夾,再把路徑填進下面。 */
+        detail:{
+          cover:"",   // 大張封面截圖(整頁寬),例:"images/dca-cover.png"
+          text:"<p>因為 Smart DCA 需登入才能體驗完整功能,這裡用截圖與說明呈現:</p>"+
+               "<p><b>核心功能</b> — 恐懼貪婪指數 + RSI 進場訊號、加密/美股/台股三市場整合、社群論壇、Gemini LLM 新聞分析、LINE Bot 每日推播。</p>"+
+               "<p><b>成長飛輪</b> — 每日推播訊號 → 提高回訪黏著 → 訊號準確強化保留。</p>"+
+               "<p><b>商業化</b> — 數據訂閱(基礎免費、深度 AI 分析付費)、達人 IP 內容分潤、社群廣告與券商導流。</p>",
+          images:[],  // 多張截圖,例:["images/dca-signal.png","images/dca-forum.png","images/dca-line.png"]
+        },
+      },
+      {
+        title:"AI 協作 × 創造力研究", badge:"碩士論文", cats:["AI","Research"],
+        desc:"設計並執行 63 人對照實驗,建立量化指標(SemDis 語意距離 + 6 位專家評分),驗證三種創作模式成效差異。總結出「AI 抽象發散 → 人類篩選 → AI 協作精練」可複用流程並導入日常工作。",
+        links:[],
+        tech:["實驗設計","SemDis","量化分析","假設驗證"],
+      },
+      {
+        title:"VR Brainstorming NPC", badge:"IEEE 2024", cats:["AI","Research"],
+        desc:"整合 ChatGPT 於虛擬實境腦力激盪 NPC 之應用。發表於 IEEE GCCE 2024(日本九州)研討會。",
+        links:[{label:"操作影片",url:"https://youtu.be/hY4fIOQBAEU"}],
+        tech:["ChatGPT","VR","NPC","Unity"],
+      },
+    ],
+    stack: [
+      {group:"AI & Building", items:["Claude","Gemini","ChatGPT","Midjourney"]},
+      {group:"程式・開發",    items:["HTML","JavaScript","C#","Git"]},
+      {group:"後端・API",     items:["Supabase","API 串接(REST、LINE、金融)"]},
+      {group:"產品・數據",    items:["RStudio (R)","SPSS","實驗設計","量化分析","假設驗證","Notion"]},
+      {group:"設計",          items:["Blender","Maya","Photoshop","Illustrator","Premiere","Figma","RIVE"]},
+      {group:"語言",          items:["中文","英文 · TOEIC 735"]},
+    ],
+  },
 
-        function addResponse() {
-            const stimulusWord = document.getElementById('stimulusWord').value.trim();
-            const participantResponse = document.getElementById('participantResponse').value.trim();
-            
-            if (!stimulusWord || !participantResponse) {
-                alert('請填寫刺激詞和參與者回答');
-                return;
-            }
-            
-            const response = {
-                id: currentId++,
-                stimulusWord: stimulusWord,
-                participantResponse: participantResponse,
-                score: null
-            };
-            
-            responses.push(response);
-            
-            // 清空輸入框
-            document.getElementById('stimulusWord').value = '';
-            document.getElementById('participantResponse').value = '';
-            
-            renderResponses();
-            updateProgress();
-        }
+  /* ═══════════ 要新增版本(行銷 / 業務 / PM)═══════════
+     複製上面整個 builder:{ … } 區塊,改名成 marketing / bd / pm,
+     再改 hero、about、experience、projects、stack 的內容即可。
+     下面是模板(填好再用,或整段刪掉):
 
-        function renderResponses() {
-            const container = document.getElementById('responsesList');
-            container.innerHTML = '';
-            
-            responses.forEach((response, index) => {
-                const responseDiv = document.createElement('div');
-                responseDiv.className = 'response-item';
-                
-                // 如果未評分，添加紅色外框樣式
-                if (response.score === null) {
-                    responseDiv.classList.add('unscored');
-                }
-                
-                responseDiv.innerHTML = `
-                    <div class="response-header">
-                        <div style="width: 100%;">
-                            <div style="text-align: center; margin-bottom: 8px;">
-                                <span style="background: #4299e1; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; margin-right: 10px;">
-                                    ${index + 1}/${responses.length}
-                                </span>
-                                ${response.participantId ? `<span style="background: #805ad5; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; margin-right: 10px;">
-                                    ID: ${response.participantId}
-                                </span>` : ''}
-                                ${response.score === null ? `<span style="background: #e53e3e; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.9em; animation: pulse 2s infinite;">
-                                    ⚠️ 未評分
-                                </span>` : ''}
-                            </div>
-                            <div style="text-align: center; font-size: 1.2em;">
-                                <strong>刺激詞：</strong>${response.stimulusWord}　
-                                <strong>回答：</strong><span class="response-text">${response.participantResponse}</span>
-                            </div>
-                        </div>
-                        <button class="delete-btn" onclick="deleteResponse(${response.id})">刪除</button>
-                    </div>
-                    <div class="rating-scale">
-                        <div style="width: 100%;">
-                            <div class="scale-labels">
-                                <span>1-2分（低）<br><small>常見、單一、沒細節、不合理</small></span>
-                                <span>3分（中）<br><small>有創意但有限</small></span>
-                                <span>4-5分（高）<br><small>稀+遠+透+切</small></span>
-                            </div>
-                            <div class="radio-group">
-                                ${[1, 2, 3, 4, 5].map(score => `
-                                    <div class="radio-item">
-                                        <input type="radio" 
-                                               id="score_${response.id}_${score}" 
-                                               name="score_${response.id}" 
-                                               value="${score}"
-                                               ${response.score == score ? 'checked' : ''}
-                                               onchange="updateScore(${response.id}, ${score})">
-                                        <label for="score_${response.id}_${score}">${score}</label>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(responseDiv);
-            });
-        }
+  marketing: {
+    hero:{ hi:"Hi, I'm Kai", sub:"Product Marketing · Growth", zh:"林新凱 — 用數據說故事、驅動成長" },
+    about:"(行銷版的自我介紹…)",
+    experience:[ …同 builder 格式… ],
+    projectFilters:["All","Growth","Content","Product"],
+    projects:[ … ],
+    stack:[ … ],
+  },
+  */
+};
 
-        function updateScore(responseId, score) {
-            const response = responses.find(r => r.id === responseId);
-            if (response) {
-                response.score = score;
-                updateProgress();
-                // 重新渲染以移除紅色外框
-                renderResponses();
-            }
-        }
+/* 預設顯示哪個版本;也可用網址 ?v=marketing 切換(方便針對不同職缺寄不同連結) */
+const DEFAULT_PROFILE = "builder";
+const DATA = Object.assign({}, SHARED, PROFILES[new URLSearchParams(location.search).get("v")] || PROFILES[DEFAULT_PROFILE]);
+/* ════════════════════ ▲▲▲  DATA 結束。下面是程式,通常不用動。 ▲▲▲ ════════════════════ */
 
-        function deleteResponse(responseId) {
-            if (confirm('確定要刪除這個回答嗎？')) {
-                responses = responses.filter(r => r.id !== responseId);
-                renderResponses();
-                updateProgress();
-            }
-        }
 
-        function updateProgress() {
-            const totalCount = responses.length;
-            const scoredCount = responses.filter(r => r.score !== null).length;
-            
-            document.getElementById('totalCount').textContent = totalCount;
-            document.getElementById('scoredCount').textContent = scoredCount;
-            
-            const progressInfo = document.getElementById('progressInfo');
-            if (totalCount > 0) {
-                progressInfo.style.display = 'block';
-            } else {
-                progressInfo.style.display = 'none';
-            }
-        }
+/* ---------- icons ---------- */
+const ICON = {
+  github:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.7 5.6.7 11.9c0 5 3.3 9.3 7.8 10.8.6.1.8-.2.8-.5v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11 11 0 0 1 6 0C17.3 4.6 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.6.8.5 4.5-1.5 7.8-5.8 7.8-10.8C23.3 5.6 18.3.5 12 .5Z"/></svg>',
+  linkedin:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.4 3H3.6C3 3 2.5 3.5 2.5 4.1v15.8c0 .6.5 1.1 1.1 1.1h16.8c.6 0 1.1-.5 1.1-1.1V4.1c0-.6-.5-1.1-1.1-1.1ZM8.3 18.3H5.5V9.7h2.8v8.6ZM6.9 8.5a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2Zm11.4 9.8h-2.8v-4.2c0-1 0-2.3-1.4-2.3s-1.6 1.1-1.6 2.2v4.3H9.7V9.7h2.7v1.2h.1c.4-.7 1.3-1.4 2.6-1.4 2.8 0 3.3 1.8 3.3 4.2v4.6Z"/></svg>',
+  behance:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 11.3c.6-.3 1-.9 1-1.7 0-1.6-1.2-2.3-2.7-2.3H2v9.4h5.5c1.6 0 3-.8 3-2.6 0-1.1-.5-1.9-1.5-2.2ZM4.2 9h2.5c.6 0 1.1.2 1.1.9s-.4 1-1.1 1H4.2V9Zm2.8 5.7H4.2v-2.2h2.9c.7 0 1.3.3 1.3 1.1 0 .8-.6 1.1-1.4 1.1ZM21.9 13c0-2.1-1.2-3.8-3.4-3.8-2.1 0-3.6 1.6-3.6 3.7 0 2.2 1.4 3.6 3.6 3.6 1.7 0 2.8-.8 3.3-2.3h-1.9c-.2.5-.7.7-1.3.7-.9 0-1.4-.5-1.5-1.4h4.8c0-.1 0-.2 0-.4Zm-4.8-.9c.1-.8.6-1.3 1.4-1.3.8 0 1.3.5 1.3 1.3h-2.7ZM15.2 8.2h4.3V7.1h-4.3v1.1Z"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
+  ext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"/></svg>',
+  chev:'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>',
+};
+const isExt = u => /^https?:/i.test(u||"");
 
-        function clearAll() {
-            if (confirm('確定要清除所有資料嗎？此操作無法復原。')) {
-                responses = [];
-                currentId = 1;
-                renderResponses();
-                updateProgress();
-            }
-        }
+/* ---------- scroll reveal (defined early so renderers can use it) ---------- */
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add("in");io.unobserve(e.target);}
+}),{threshold:.12,rootMargin:"0px 0px -6% 0px"});
+function observe(els){els.forEach(el=>io.observe(el));}
 
-        function exportToExcel() {
-            if (responses.length === 0) {
-                alert('沒有資料可以匯出');
-                return;
-            }
-            
-            const unscored = responses.filter(r => r.score === null);
-            if (unscored.length > 0) {
-                if (!confirm(`還有 ${unscored.length} 個回答尚未評分，確定要匯出嗎？`)) {
-                    return;
-                }
-            }
-            
-            // 準備匯出資料
-            const exportData = responses.map((response, index) => ({
-                '序號': index + 1,
-                '組別': response.group || '',
-                '參與者ID': response.participantId || '',
-                '刺激詞': response.stimulusWord,
-                '參與者回答': response.participantResponse,
-                '創造力評分': response.score || '未評分',
-                '評分時間': new Date().toLocaleString('zh-TW')
-            }));
-            
-            // 建立工作簿
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, '創造力評分結果');
-            
-            // 設定欄位寬度
-            ws['!cols'] = [
-                { width: 8 },   // 序號
-                { width: 12 },  // 組別
-                { width: 12 },  // 參與者ID
-                { width: 15 },  // 刺激詞
-                { width: 20 },  // 參與者回答
-                { width: 12 },  // 創造力評分
-                { width: 20 }   // 評分時間
-            ];
-            
-            // 匯出檔案
-            const fileName = `創造力評分結果_${new Date().toISOString().slice(0, 10)}.xlsx`;
-            XLSX.writeFile(wb, fileName);
-            
-            alert('Excel檔案已成功匯出！');
-        }
+/* ---------- nav ---------- */
+document.getElementById("nav").innerHTML =
+  DATA.nav.map(n=>`<a href="${n.href}"${n.opt?' data-opt':''}>${n.label}</a>`).join("");
 
-        // 頁面載入時的初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            updateProgress();
-        });
+/* ---------- hero ---------- */
+document.getElementById("hi").textContent  = DATA.hero.hi;
+/* hero typewriter — types each role, pauses, deletes, loops */
+(function(){
+  const el=document.getElementById("sub"), roles=DATA.hero.roles;
+  if(!roles || !roles.length){ el.textContent = DATA.hero.sub || ""; return; }
+  el.innerHTML='<span id="tw"></span><span class="tw-caret">█</span>';
+  const tw=document.getElementById("tw");
+  let ri=0, ci=0, del=false;
+  (function tick(){
+    const w=roles[ri];
+    ci += del ? -1 : 1;
+    tw.textContent = w.slice(0,ci);
+    if(!del && ci===w.length){ del=true; return setTimeout(tick,1600); }
+    if(del && ci===0){ del=false; ri=(ri+1)%roles.length; return setTimeout(tick,420); }
+    setTimeout(tick, del?42:80);
+  })();
+})();
+document.getElementById("zh").textContent  = DATA.hero.zh;
 
-        // 監聽Enter鍵以快速新增回答
-        document.getElementById('participantResponse').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addResponse();
-            }
-        });
-    </script>
+/* ---------- about ---------- */
+document.getElementById("aboutText").innerHTML = DATA.about;
+{
+  const L=DATA.links, S=[];
+  if(L.github)   S.push(`<a href="${L.github}"   target="_blank" rel="noopener" aria-label="GitHub">${ICON.github}</a>`);
+  if(L.linkedin) S.push(`<a href="${L.linkedin}" target="_blank" rel="noopener" aria-label="LinkedIn">${ICON.linkedin}</a>`);
+  if(L.behance)  S.push(`<a href="${L.behance}"  target="_blank" rel="noopener" aria-label="Behance">${ICON.behance}</a>`);
+  if(L.resume)   S.push(`<a href="${L.resume}"   aria-label="Resume">${ICON.doc}</a>`);
+  document.getElementById("socials").innerHTML = S.join("");
+}
+
+/* ---------- experience ---------- */
+document.getElementById("expList").innerHTML = DATA.experience.map((e,i)=>{
+  const blocks = e.blocks.map(b=>`<div class="blk"><h4>${b.h}</h4><ul>${
+      b.items.map(it=>`<li>${it}</li>`).join("")}</ul></div>`).join("");
+  const tags = (e.tech||[]).map(t=>`<span class="tag">${t}</span>`).join("");
+  return `<div class="exp-card rv${e.open?' open':''}">
+    <button class="exp-head" aria-expanded="${!!e.open}">
+      <div><div class="exp-role">${e.role}</div><div class="exp-org">${e.org}${e.loc?'  ｜  '+e.loc:''}</div></div>
+      <div class="exp-right"><span class="exp-period">${e.period}</span>${ICON.chev}</div>
+    </button>
+    <div class="exp-body"><div class="exp-bw"><div class="exp-inner">${blocks}<div class="tags">${tags}</div>
+      <button class="exp-more" data-i="${i}">查看更多 →</button></div></div></div>
+  </div>`;
+}).join("");
+document.querySelectorAll(".exp-head").forEach(h=>{
+  h.addEventListener("click",()=>{
+    const c=h.closest(".exp-card"), open=c.classList.toggle("open");
+    h.setAttribute("aria-expanded",open);
+  });
+});
+document.querySelectorAll(".exp-more").forEach(b=>{
+  b.addEventListener("click",ev=>{ev.stopPropagation(); openExp(DATA.experience[+b.dataset.i]);});
+});
+
+/* ---------- projects + filters ---------- */
+const grid=document.getElementById("projGrid");
+function projCard(p){
+  const links=(p.links||[]).map(l=>{
+    const ext=isExt(l.url);
+    return `<a class="plink" href="${l.url}" ${ext?'target="_blank" rel="noopener"':''}>${l.label}${ext?ICON.ext:''}</a>`;
+  }).join("");
+  const tags=(p.tech||[]).map(t=>`<span class="tag">${t}</span>`).join("");
+  const badge = p.badge ? `<span class="badge${/Live/i.test(p.badge)?'':' ghost'}">${p.badge}</span>` : "";
+  return `<article class="card rv" data-cats="${(p.cats||[]).join(',')}">
+    <div class="card-top"><h3>${p.title}</h3>${badge}</div>
+    <p>${p.desc}</p>
+    ${links?`<div class="card-links">${links}</div>`:""}
+    <div class="tags">${tags}</div>
+    <span class="card-more">查看更多 <span class="ar">→</span></span>
+  </article>`;
+}
+function renderProjects(filter){
+  const list = DATA.projects.filter(p => filter==="All" || (p.cats||[]).includes(filter));
+  grid.innerHTML = list.map(projCard).join("");
+  grid.querySelectorAll(".card").forEach((card,i)=>{
+    card.addEventListener("click",()=>openProj(list[i]));
+    card.querySelectorAll("a").forEach(a=>a.addEventListener("click",ev=>ev.stopPropagation()));
+  });
+  observe(grid.querySelectorAll(".rv"));
+}
+document.getElementById("filters").innerHTML =
+  DATA.projectFilters.map((f,i)=>`<button class="${i===0?'on':''}">${f}</button>`).join("");
+document.querySelectorAll("#filters button").forEach(b=>{
+  b.addEventListener("click",()=>{
+    document.querySelectorAll("#filters button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    renderProjects(b.textContent);
+  });
+});
+renderProjects("All");
+
+/* ---------- stack ---------- */
+document.getElementById("stackList").innerHTML = DATA.stack.map(s=>`
+  <div class="stack-row rv"><div class="sg">${s.group}</div>
+    <div class="chips">${s.items.map(i=>`<span class="chip">${i}</span>`).join("")}</div></div>`).join("");
+
+/* ---------- education & awards ---------- */
+const eduItem=o=>`<div class="edu-item">${o.when?`<div class="edu-when">${o.when}</div>`:""}<div class="edu-what">${o.what}</div></div>`;
+document.getElementById("eduList").innerHTML   = (DATA.education||[]).map(eduItem).join("");
+document.getElementById("awardList").innerHTML = (DATA.awards||[]).map(eduItem).join("");
+
+/* ---------- detail modal ---------- */
+const modal=document.getElementById("modal"), modalContent=document.getElementById("modalContent");
+function openModal(html){ modalContent.innerHTML=html; modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false"); document.body.style.overflow="hidden";
+  const pn=modal.querySelector(".modal-panel"); if(pn) pn.scrollTop=0; }
+function closeModal(){ modal.classList.remove("open"); modal.setAttribute("aria-hidden","true"); document.body.style.overflow=""; }
+modal.querySelectorAll("[data-close]").forEach(el=>el.addEventListener("click",closeModal));
+addEventListener("keydown",e=>{ if(e.key==="Escape" && modal.classList.contains("open")) closeModal(); });
+function imgGrid(a){ return (a&&a.length)?`<div class="modal-imgs">${a.map(s=>`<img src="${s}" alt="" loading="lazy">`).join("")}</div>`:""; }
+function tagRow(a){ return (a&&a.length)?`<div class="tags">${a.map(t=>`<span class="tag">${t}</span>`).join("")}</div>`:""; }
+function cover(d){ return (d&&d.cover)?`<img class="modal-cover" src="${d.cover}" alt="" loading="lazy">`:""; }
+function openExp(e){
+  const d=e.detail||{};
+  const text = d.text || e.blocks.map(b=>`<p><b>${b.h}</b><br>${b.items.join("<br>")}</p>`).join("");
+  openModal(`<div class="modal-meta">${e.org}${e.loc?' ｜ '+e.loc:''} · ${e.period}</div>
+    <h3>${e.role}</h3>
+    ${cover(d)}
+    <div class="modal-body">${text}</div>
+    ${imgGrid(d.images)}
+    ${tagRow(e.tech)}`);
+}
+function openProj(p){
+  const d=p.detail||{};
+  const links=(p.links||[]).map(l=>{const ext=isExt(l.url);
+    return `<a class="plink" href="${l.url}" ${ext?'target="_blank" rel="noopener"':''}>${l.label}${ext?ICON.ext:''}</a>`;}).join("");
+  openModal(`${p.badge?`<div class="modal-meta">${p.badge}</div>`:""}
+    <h3>${p.title}</h3>
+    ${cover(d)}
+    <div class="modal-body"><p>${p.desc}</p>${d.text||""}</div>
+    ${imgGrid(d.images)}
+    ${tagRow(p.tech)}
+    ${links?`<div class="modal-links">${links}</div>`:""}`);
+}
+
+/* ---------- contact ---------- */
+const C=DATA.contact;
+const mail=document.getElementById("mail");
+mail.href=`mailto:${C.email}`; mail.innerHTML=`${C.email} ${ICON.ext}`;
+document.getElementById("cinfo").innerHTML =
+  `<a href="tel:${C.phone.replace(/[^0-9+]/g,'')}">📱 ${C.phone}</a>`+
+  `<span>📍 ${C.location}</span>`;
+document.getElementById("foot").innerHTML =
+  `<span>© ${new Date().getFullYear()} 林新凱 KAI LIN</span><span>桃園 · 台灣</span><span>BUILT WITH AI · rev 0604</span>`;
+
+/* ---------- reveal all rendered elements ---------- */
+observe(document.querySelectorAll(".rv"));
+
+/* ---------- nav active (scroll-spy) ---------- */
+const navLinks=[...document.querySelectorAll("#nav a")];
+const secs=DATA.nav.map(n=>document.querySelector(n.href)).filter(Boolean);
+const spy=new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting){
+    navLinks.forEach(a=>a.classList.toggle("active",a.getAttribute("href")==="#"+e.target.id));
+  }});
+},{rootMargin:"-45% 0px -50% 0px"});
+secs.forEach(s=>spy.observe(s));
+
+/* ---------- 互動式 3D 背景:Vanta.NET(會跟著滑鼠轉動) ---------- */
+/* 換效果:把 VANTA.NET 改成 VANTA.GLOBE / VANTA.DOTS / VANTA.TOPOLOGY,並把上面 vanta.net.min.js 換成對應檔即可 */
+(function(){
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce || typeof VANTA==="undefined" || !window.THREE) return;  // 尊重減少動態偏好;缺套件則保持純底色
+  let fx = VANTA.NET({
+    el:"#poly", THREE:window.THREE,
+    mouseControls:true, touchControls:true, gyroControls:false,
+    minHeight:200, minWidth:200, scale:1, scaleMobile:1,
+    color:0x9a9aa3,            // 點/線顏色(對應 --muted,亮一點較明顯)
+    backgroundColor:0x08080a,  // 對應 --bg
+    points:11, maxDistance:22, spacing:17, showDots:true
+  });
+  // 行動裝置降載:減少點數以省效能
+  if(innerWidth<700 && fx && fx.setOptions){ fx.setOptions({points:8, maxDistance:20, spacing:20}); }
+})();
+</script>
 </body>
 </html>
